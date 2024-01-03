@@ -1,11 +1,12 @@
 INCLUDE:=-I/usr/local/include/kubernetes/
 LIBS:=-lyaml -lwebsockets -lkubernetes -L/usr/local/lib
 CFLAGS:=-g
-BIN:=list_pod_bin
+BIN:=patch-deployment
+LDFLAGS:=-Wl,-rpath,/usr/local/lib
 
 .PHONY : all clean test memcheck
 all:
-	gcc main.c $(CFLAGS) $(INCLUDE) $(LIBS) -o $(BIN)
+	gcc main.c $(CFLAGS) $(INCLUDE) $(LIBS) $(LDFLAGS) -o $(BIN)
 
 test:
 	./$(BIN)

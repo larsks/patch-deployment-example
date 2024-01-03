@@ -1,9 +1,11 @@
+#include <stdlib.h>
+
 #include <config/kube_config.h>
 #include <api/AppsV1API.h>
 #include <model/object.h>
 #include <stdio.h>
 
-void patch_deployment(apiClient_t *apiClient)
+void patch_deployment(apiClient_t *apiClient, char *name, char *namespace, int replicas)
 {
     v1_deployment_t *deploy;
     object_t * body;
@@ -12,7 +14,7 @@ void patch_deployment(apiClient_t *apiClient)
     cJSON *jsonObject = cJSON_CreateObject();
     cJSON_AddStringToObject(jsonObject, "op", "replace");
     cJSON_AddStringToObject(jsonObject, "path", "/spec/replicas");
-    cJSON_AddNumberToObject(jsonObject, "value", 2);
+    cJSON_AddNumberToObject(jsonObject, "value", replicas);
 
     cJSON_AddItemToArray(jsonArray, jsonObject);
 
@@ -22,10 +24,10 @@ void patch_deployment(apiClient_t *apiClient)
         return;
     }
 
-    v1_scale_t *result = AppsV1API_patchNamespacedDeployment(
+    deploy = AppsV1API_patchNamespacedDeployment(
             apiClient,
-            "web",
-            "default",
+            name,
+            namespace,
             body,
             NULL,
             NULL,
@@ -38,7 +40,7 @@ void patch_deployment(apiClient_t *apiClient)
     }
 }
 
-int main()
+int main(int argc, char *argv[])
 {
     char *basePath = NULL;
     sslConfig_t *sslConfig = NULL;
@@ -49,6 +51,12 @@ int main()
         printf("Cannot load kubernetes configuration.\n");
         return -1;
     }
+
+    if (argc < 4) {
+        fprintf(stderr, "usage: %s name namespace replicas\n", argv[0]);
+        exit(2);
+    }
+
     apiClient_t *apiClient = apiClient_create_with_base_path(basePath, sslConfig, apiKeys);
     if (!apiClient)
     {
@@ -56,7 +64,7 @@ int main()
         return -1;
     }
 
-    patch_deployment(apiClient);
+    patch_deployment(apiClient, argv[1], argv[2], atoi(argv[3]));
 
     apiClient_free(apiClient);
     apiClient = NULL;
